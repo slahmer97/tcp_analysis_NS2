@@ -67,16 +67,18 @@ def gen_traffic(traff_mat="traffic_matrix.data",burst_time=0.5,idle_time=0.5,sha
 
             #streams = divide_traffic(tcp_quantity)
             #print(streams)
-            #stream_id = 0
-            #for s in streams :
-            #s = tcp_quantity
-            #stream_id +=1
-            #gen_time = int(rand.uniform(0,simulation_duration))
-            #out.write("set TCP_AGENT_{}_{}_{} [new Agent/TCP]\n".format(from_,to_,stream_id))
-            #out.write("set SINK_AGENT_{}_{}_{} [new Agent/TCPSink]\n".format(from_,to_,stream_id))
-            #out.write("$ns attach-agent $nodes({}) $TCP_AGENT_{}_{}_{} \n".format(from_,from_,to_,stream_id))
-            #out.write("$ns attach-agent $nodes({}) $SINK_AGENT_{}_{}_{} \n".format(to_,from_,to_,stream_id))
-            #out.write("$ns at {} {}$TCP_AGENT_{}_{}_{}  send {}{}\n".format(gen_time,'"',from_,to_,stream_id,s,'"'))
+            s = 30000 # change it to loop
+            stream_id = 0
+            gen_time = rand.uniform(0,1) # change to 0->sim_dur
+            out.write("set TCP_AGENT({}.{}.{}) [new Agent/TCP]\n".format(from_,to_,stream_id))
+            out.write("$TCP_AGENT({}.{}.{}) set packetSize_ {}\n".format(from_,to_,stream_id, packet_size))
+            out.write("$TCP_AGENT({}.{}.{}) set fid_ {}\n".format(from_,to_,stream_id,stream_id))
+            out.write("set tcp_receiver({}.{}.{}) [new Agent/TCPSink]\n".format(from_,to_,stream_id))
+            out.write("$ns attach-agent $nodes({}) $TCP_AGENT({}.{}.{})\n".format(from_,from_,to_,stream_id))
+            out.write("$ns attach-agent $nodes({}) $tcp_receiver({}.{}.{})\n".format(to_, from_,to_,stream_id))
+            out.write("$ns connect $TCP_AGENT({}.{}.{}) $tcp_receiver({}.{}.{})\n".format(from_, to_, stream_id, from_, to_, stream_id))
+            out.write("$ns at {} \"$TCP_AGENT({}.{}.{}) send {}\"\n".format(gen_time, from_, to_, stream_id,s))
+
 
 def divide_traffic(quantity):
     streams = []
@@ -98,13 +100,13 @@ routers_africa = 10
 n = routers_america + routers_europe + routers_africa
 
 
-out.write("set rate 100Mb\n")
-out.write("set delay 50ms\n")
+out.write("set rate 300Mb\n")
+out.write("set delay 20ms\n")
 out.write("set queue_type DropTail\n")
 out.write("set queue_size 20\n")
 
-out.write("\nset c_rate 100Mb\n")
-out.write("set c_delay 50ms\n")
+out.write("\nset c_rate 300Mb\n")
+out.write("set c_delay 20ms\n")
 out.write("set c_queue_type DropTail\n")
 out.write("set c_queue_size 20\n")
 
@@ -188,6 +190,6 @@ gen_traffic()
 
 #=====================
 out.write("""
-$ns at 10.0 "finish"
+$ns at 4.0 "finish"
 $ns run
 """)
