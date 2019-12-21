@@ -1,13 +1,17 @@
 from tmgen.models import exp_tm
-import pandas as pd
 import numpy as np
 import sys
 from scipy.stats import poisson as poi
 import random as rand
+import random
+import math
+from statistics import mean
+
 simulation_duration = 10.0
 out = open("tp.tcl","w")
 max_streams_count = 50
 mean_size = 1500000
+
 def gen_traffic_matrix(file_="traffic_matrix.data"):
     tm = exp_tm(34,5000000,1).matrix
     res = []
@@ -25,7 +29,6 @@ def gen_traffic_matrix(file_="traffic_matrix.data"):
         tmp = []
     np.savetxt('traffic_matrix.data',res, delimiter=',',fmt='%4.3e')
 #=============================
-
 
 def gen_traffic(traff_mat="traffic_matrix.data",burst_time=0.5,idle_time=0.5,shape=1.1,packet_size=1500):
     matrix = np.loadtxt(traff_mat,delimiter=",")
@@ -65,30 +68,35 @@ def gen_traffic(traff_mat="traffic_matrix.data",burst_time=0.5,idle_time=0.5,sha
             out.write("$ns at 0 {}$TPGEN_{}_{} start{}\n".format('"',from_,to_,'"'))
 
 
-            #streams = divide_traffic(tcp_quantity)
-            #print(streams)
-            s = 30000 # change it to loop
+            streams = fstreams(tcp_quantity)
             stream_id = 0
-            gen_time = rand.uniform(0,1) # change to 0->sim_dur
-            out.write("set TCP_AGENT({}.{}.{}) [new Agent/TCP]\n".format(from_,to_,stream_id))
-            out.write("$TCP_AGENT({}.{}.{}) set packetSize_ {}\n".format(from_,to_,stream_id, packet_size))
-            out.write("$TCP_AGENT({}.{}.{}) set fid_ {}\n".format(from_,to_,stream_id,stream_id))
-            out.write("set tcp_receiver({}.{}.{}) [new Agent/TCPSink]\n".format(from_,to_,stream_id))
-            out.write("$ns attach-agent $nodes({}) $TCP_AGENT({}.{}.{})\n".format(from_,from_,to_,stream_id))
-            out.write("$ns attach-agent $nodes({}) $tcp_receiver({}.{}.{})\n".format(to_, from_,to_,stream_id))
-            out.write("$ns connect $TCP_AGENT({}.{}.{}) $tcp_receiver({}.{}.{})\n".format(from_, to_, stream_id, from_, to_, stream_id))
-            out.write("$ns at {} \"$TCP_AGENT({}.{}.{}) send {}\"\n".format(gen_time, from_, to_, stream_id,s))
+
+            for s in streams:
+	            gen_time = rand.uniform(0, simulation_duration)
+	            out.write("set TCP_AGENT({}.{}.{}) [new Agent/TCP]\n".format(from_,to_,stream_id))
+	            out.write("$TCP_AGENT({}.{}.{}) set packetSize_ {}\n".format(from_,to_,stream_id, packet_size))
+	            out.write("$TCP_AGENT({}.{}.{}) set fid_ {}\n".format(from_,to_,stream_id,stream_id))
+	            out.write("set tcp_receiver({}.{}.{}) [new Agent/TCPSink]\n".format(from_,to_,stream_id))
+	            out.write("$ns attach-agent $nodes({}) $TCP_AGENT({}.{}.{})\n".format(from_,from_,to_,stream_id))
+	            out.write("$ns attach-agent $nodes({}) $tcp_receiver({}.{}.{})\n".format(to_, from_,to_,stream_id))
+	            out.write("$ns connect $TCP_AGENT({}.{}.{}) $tcp_receiver({}.{}.{})\n".format(from_, to_, stream_id, from_, to_, stream_id))
+	            out.write("$ns at {} \"$TCP_AGENT({}.{}.{}) send {}\"\n".format(gen_time, from_, to_, stream_id, s))
+	            stream_id += 1
 
 
-def divide_traffic(quantity):
-    streams = []
-    _quan = quantity
-    for i in range (3):
-        streams.append(int(quantity/3))
+def fstreams(total_quantity, min_size = 15*1000):
+    s = 0.0
+    strms = []
+    while s < total_quantity:
+        u = random.random()
+        k = math.log(4) / math.log(5)
+        t = min_size / (u ** (1 / k))
+        s += t
+        strms.append(t)
 
-
-    return streams
-
+    d = sum(strms) - total_quantity
+    strms[-1] -= d
+    return strms
 
 
 gen_traffic_matrix()
@@ -100,15 +108,15 @@ routers_africa = 10
 n = routers_america + routers_europe + routers_africa
 
 
-out.write("set rate 300Mb\n")
+out.write("set rate 500Mb\n")
 out.write("set delay 20ms\n")
 out.write("set queue_type DropTail\n")
-out.write("set queue_size 20\n")
+out.write("set queue_size 30\n")
 
 out.write("\nset c_rate 300Mb\n")
 out.write("set c_delay 20ms\n")
 out.write("set c_queue_type DropTail\n")
-out.write("set c_queue_size 20\n")
+out.write("set c_queue_size 30\n")
 
 out.write("""
 set ns [new Simulator]
@@ -190,6 +198,7 @@ gen_traffic()
 
 #=====================
 out.write("""
-$ns at 4.0 "finish"
+$ns at %f "finish"
 $ns run
-""")
+""" % simulation_duration)
+
