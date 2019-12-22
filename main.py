@@ -1,4 +1,4 @@
-from tmgen.models import exp_tm
+from tmgen.models import uniform_tm
 import numpy as np
 import sys
 from scipy.stats import poisson as poi
@@ -8,34 +8,43 @@ import math
 from statistics import mean
 
 simulation_duration = 10.0
-out = open("tp.tcl","w")
+out = open("tp.tcl", "w")
 max_streams_count = 50
 mean_size = 1500000
 
+
 def gen_traffic_matrix(file_="traffic_matrix.data"):
-    tm = exp_tm(34,5000000,1).matrix
+    tm = uniform_tm(34, 10000000, 1).matrix
     res = []
     for i in range(len(tm)):
         line = tm[i]
         tmp = []
         for j in range(len(line)):
-            if (i == j)  or (i < 12 and j < 12) or ( 12<= i < 24 and 12 <= j <24) or (i >=24 and j >=24) :
+            if (i == j) or (i < 12 and j < 12) or (12 <= i < 24 and 12 <= j < 24) or (i >= 24 and j >= 24):
                 tmp.append(0)
-            else :
+            else:
                 tmp.append(line[j][0])
-            #print ("{} ".format(line[j][0]))
-        #print ("=========")
+            # print ("{} ".format(line[j][0]))
+        # print ("=========")
         res.append(tmp)
         tmp = []
-    np.savetxt('traffic_matrix.data',res, delimiter=',',fmt='%4.3e')
-#=============================
+    np.savetxt('traffic_matrix.data', res, delimiter=',', fmt='%4.3e')
 
-def gen_traffic(traff_mat="traffic_matrix.data",burst_time=0.5,idle_time=0.5,shape=1.1,packet_size=1500):
-    matrix = np.loadtxt(traff_mat,delimiter=",")
+
+# =============================
+
+out.write("""
+proc randomColor {} {format #%06x [expr {int(rand() * 0xFFFFFF)}]}
+""")
+
+
+def gen_traffic(traff_mat="traffic_matrix.data", burst_time=0.5, idle_time=0.5, shape=1.1, packet_size=1500):
+    matrix = np.loadtxt(traff_mat, delimiter=",")
     dim = len(matrix)
+    fid = 0
     for i in range(dim):
         for j in range(dim):
-            print ("{},{} : ".format(i,j))
+            print("{},{} : ".format(i, j))
             total_quantity = int(matrix[i][j])
             if total_quantity <= 0:
                 continue
@@ -44,47 +53,48 @@ def gen_traffic(traff_mat="traffic_matrix.data",burst_time=0.5,idle_time=0.5,sha
             tcp_quantity = 0.2 * total_quantity
             on_off_noise = total_quantity - tcp_quantity
 
-            pareto_rate = 2*(on_off_noise / simulation_duration)
+            pareto_rate = 2 * (on_off_noise / simulation_duration)
             pareto_burst_time = burst_time
             pareto_idle_time = idle_time
             pareto_shape = 1.1
 
-            out.write("set UDP_GENN_{}_{} [new Agent/UDP]\n".format(from_,to_))
-            out.write("set UDP_NULL_{}_{} [new Agent/Null]\n".format(from_,to_))
+            out.write("set UDP_GENN_{}_{} [new Agent/UDP]\n".format(from_, to_))
+            out.write("set UDP_NULL_{}_{} [new Agent/Null]\n".format(from_, to_))
 
-            out.write("$ns attach-agent $nodes({}) $UDP_GENN_{}_{}\n".format(from_, from_,to_ ))
-            out.write("$ns attach-agent $nodes({}) $UDP_NULL_{}_{}\n".format(to_,from_, to_))
+            out.write("$ns attach-agent $nodes({}) $UDP_GENN_{}_{}\n".format(from_, from_, to_))
+            out.write("$ns attach-agent $nodes({}) $UDP_NULL_{}_{}\n".format(to_, from_, to_))
 
+            out.write("set TPGEN_{}_{} [new Application/Traffic/Pareto]\n".format(from_, to_))
+            out.write("$TPGEN_{}_{} set idle_time_ {}s \n".format(from_, to_, pareto_idle_time))
+            out.write("$TPGEN_{}_{} set burst_time_ {}s \n".format(from_, to_, pareto_burst_time))
+            out.write("$TPGEN_{}_{} set shape_ {} \n".format(from_, to_, pareto_shape))
+            out.write("$TPGEN_{}_{} set rate_ {} \n".format(from_, to_, pareto_rate))
+            out.write("$TPGEN_{}_{} set packetSize_ {} \n".format(from_, to_, 1500))
 
-            out.write("set TPGEN_{}_{} [new Application/Traffic/Pareto]\n".format(from_,to_))
-            out.write("$TPGEN_{}_{} set idle_time_ {}s \n".format(from_,to_,pareto_idle_time))
-            out.write("$TPGEN_{}_{} set burst_time_ {}s \n".format(from_,to_,pareto_burst_time))
-            out.write("$TPGEN_{}_{} set shape_ {} \n".format(from_,to_,pareto_shape))
-            out.write("$TPGEN_{}_{} set rate_ {} \n".format(from_,to_,pareto_rate))
-            out.write("$TPGEN_{}_{} set packetSize_ {} \n".format(from_,to_,1500))
-
-            out.write("$TPGEN_{}_{} attach-agent $UDP_GENN_{}_{}\n".format(from_,to_,from_,to_))
-            out.write("$ns connect $UDP_GENN_{}_{} $UDP_NULL_{}_{} \n".format(from_,to_,from_,to_))
-            out.write("$ns at 0 {}$TPGEN_{}_{} start{}\n".format('"',from_,to_,'"'))
-
+            out.write("$TPGEN_{}_{} attach-agent $UDP_GENN_{}_{}\n".format(from_, to_, from_, to_))
+            out.write("$ns connect $UDP_GENN_{}_{} $UDP_NULL_{}_{} \n".format(from_, to_, from_, to_))
+            out.write("$ns at 0 {}$TPGEN_{}_{} start{}\n".format('"', from_, to_, '"'))
 
             streams = fstreams(tcp_quantity)
             stream_id = 0
-
             for s in streams:
-	            gen_time = rand.uniform(0, simulation_duration)
-	            out.write("set TCP_AGENT({}.{}.{}) [new Agent/TCP]\n".format(from_,to_,stream_id))
-	            out.write("$TCP_AGENT({}.{}.{}) set packetSize_ {}\n".format(from_,to_,stream_id, packet_size))
-	            out.write("$TCP_AGENT({}.{}.{}) set fid_ {}\n".format(from_,to_,stream_id,stream_id))
-	            out.write("set tcp_receiver({}.{}.{}) [new Agent/TCPSink]\n".format(from_,to_,stream_id))
-	            out.write("$ns attach-agent $nodes({}) $TCP_AGENT({}.{}.{})\n".format(from_,from_,to_,stream_id))
-	            out.write("$ns attach-agent $nodes({}) $tcp_receiver({}.{}.{})\n".format(to_, from_,to_,stream_id))
-	            out.write("$ns connect $TCP_AGENT({}.{}.{}) $tcp_receiver({}.{}.{})\n".format(from_, to_, stream_id, from_, to_, stream_id))
-	            out.write("$ns at {} \"$TCP_AGENT({}.{}.{}) send {}\"\n".format(gen_time, from_, to_, stream_id, s))
-	            stream_id += 1
+                gen_time = rand.uniform(0, simulation_duration)
+                out.write("set TCP_AGENT({}.{}.{}) [new Agent/TCP]\n".format(from_, to_, stream_id))
+                out.write("$TCP_AGENT({}.{}.{}) set packetSize_ {}\n".format(from_, to_, stream_id, packet_size))
+                id_ = fid*1000+stream_id
+                out.write("$TCP_AGENT({}.{}.{}) set fid_ {}\n".format(from_, to_, stream_id, id_))
+                out.write("set tcp_receiver({}.{}.{}) [new Agent/TCPSink]\n".format(from_, to_, stream_id))
+                out.write("$ns attach-agent $nodes({}) $TCP_AGENT({}.{}.{})\n".format(from_, from_, to_, stream_id))
+                out.write("$ns attach-agent $nodes({}) $tcp_receiver({}.{}.{})\n".format(to_, from_, to_, stream_id))
+                out.write(
+                    "$ns connect $TCP_AGENT({}.{}.{}) $tcp_receiver({}.{}.{})\n".format(from_, to_, stream_id, from_,
+                                                                                        to_, stream_id))
+                out.write("$ns at {} \"$TCP_AGENT({}.{}.{}) send {}\"\n".format(gen_time, from_, to_, stream_id, s))
+                stream_id += 1
+            fid += 1
 
 
-def fstreams(total_quantity, min_size = 15*1000):
+def fstreams(total_quantity, min_size=15 * 1000):
     s = 0.0
     strms = []
     while s < total_quantity:
@@ -101,12 +111,11 @@ def fstreams(total_quantity, min_size = 15*1000):
 
 gen_traffic_matrix()
 
-#==========================================
+# ==========================================
 routers_america = 12
 routers_europe = 12
 routers_africa = 10
 n = routers_america + routers_europe + routers_africa
-
 
 out.write("set rate 500Mb\n")
 out.write("set delay 20ms\n")
@@ -134,11 +143,11 @@ proc finish {} {
 """)
 
 c_routers = ["AmEu", "AmAf", "EuAm", "EuAf", "AfAm", "AfEu"]
-c_routers_col = ["blue","blue","green","green","red","red"]
+c_routers_col = ["blue", "blue", "green", "green", "red", "red"]
 i = 0
 for r in c_routers:
     out.write("set %s [$ns node]\n" % r)
-    out.write("${} color {} \n".format(r,c_routers_col[i]))
+    out.write("${} color {} \n".format(r, c_routers_col[i]))
     i += 1
 
 for i in range(n):
@@ -191,14 +200,12 @@ for i in range(starting_router, routers_africa + starting_router):
         out.write("$ns duplex-link $nodes(%d) $AfEu $rate $delay $queue_type\n" % i)
         out.write("$ns queue-limit $nodes(%d) $AfEu $queue_size\n" % i)
 
-
-#======================
+# ======================
 
 gen_traffic()
 
-#=====================
+# =====================
 out.write("""
 $ns at %f "finish"
 $ns run
 """ % simulation_duration)
-
