@@ -9,12 +9,11 @@ from statistics import mean
 
 simulation_duration = 10.0
 out = open("tp.tcl", "w")
-max_streams_count = 50
-mean_size = 1500000
+mean_size = 10000000
 
 
 def gen_traffic_matrix(file_="traffic_matrix.data"):
-    tm = uniform_tm(34, 10000000, 1).matrix
+    tm = uniform_tm(34, mean_size, 1).matrix
     res = []
     for i in range(len(tm)):
         line = tm[i]
@@ -209,3 +208,4 @@ out.write("""
 $ns at %f "finish"
 $ns run
 """ % simulation_duration)
+
