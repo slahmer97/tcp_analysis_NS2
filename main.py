@@ -121,8 +121,8 @@ out.write("set delay 20ms\n")
 out.write("set queue_type DropTail\n")
 out.write("set queue_size 30\n")
 
-out.write("\nset c_rate 300Mb\n")
-out.write("set c_delay 20ms\n")
+out.write("\nset c_rate 250Mb\n")
+out.write("set c_delay 50ms\n")
 out.write("set c_queue_type DropTail\n")
 out.write("set c_queue_size 30\n")
 
