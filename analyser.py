@@ -16,10 +16,6 @@ pd_data = pd.read_csv(file_d, delimiter=" ", index_col=False)
 print("[+] read panda frame")
 np_data = pd_data.to_numpy()
 print("[+] convert to numpy arr")
-
-
-
-
 def cal_tmp(data, filename):
     totalBits1 = 0
     clock = 0.0
@@ -43,7 +39,7 @@ def cal_tmp(data, filename):
             clock += stamping_interval
             totalBits1 = 0
 
-#cal_tmp(np_data,"throughput")
+cal_tmp(np_data,"throughput")
 
 def display_throughput():
     ax = plt.gca()
