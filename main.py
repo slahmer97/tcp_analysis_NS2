@@ -108,7 +108,7 @@ def fstreams(total_quantity, min_size=15 * 1000):
     return strms
 
 
-gen_traffic_matrix()
+#gen_traffic_matrix()
 
 # ==========================================
 routers_america = 12
@@ -208,4 +208,5 @@ out.write("""
 $ns at %f "finish"
 $ns run
 """ % simulation_duration)
+
 
