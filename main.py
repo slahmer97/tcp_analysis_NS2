@@ -7,7 +7,7 @@ import random
 import math
 from statistics import mean
 
-simulation_duration = 10.0
+simulation_duration = 20.0
 out = open("tp.tcl", "w")
 mean_size = 10000000
 
@@ -77,7 +77,7 @@ def gen_traffic(traff_mat="traffic_matrix.data", burst_time=0.5, idle_time=0.5, 
             streams = fstreams(tcp_quantity)
             stream_id = 0
             for s in streams:
-                gen_time = rand.uniform(0.1, simulation_duration-1)
+                gen_time = rand.uniform(0.1, simulation_duration-3)
                 out.write("set TCP_AGENT({}.{}.{}) [new Agent/TCP]\n".format(from_, to_, stream_id))
                 out.write("$TCP_AGENT({}.{}.{}) set packetSize_ {}\n".format(from_, to_, stream_id, packet_size))
                 id_ = fid*1000+stream_id
