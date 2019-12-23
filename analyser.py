@@ -19,7 +19,7 @@ print("[+] convert to numpy arr")
 def cal_tmp(data, filename):
     totalBits1 = 0
     clock = 0.0
-    stamping_interval = 0.05
+    stamping_interval = 0.01
     file = open("{}.csv".format(filename), mode="w")
     file.write("time,thoughput1\n")
     for line in data:
@@ -52,3 +52,4 @@ def display_throughput():
     plt.title("Throughput evolution by time")
     plt.show()
 display_throughput()
+
