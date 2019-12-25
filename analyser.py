@@ -14,19 +14,18 @@ file_d = "trace.data"
 print("[+] checked header")
 pd_data = pd.read_csv(file_d, delimiter=",", index_col=False)
 print("[+] read panda frame")
-#np_data = pd_data.to_numpy()
+np_data = pd_data.to_numpy()
 print("[+] convert to numpy arr")
 
 
 def filter_file(data):
     f = open("trace.data","w")
     f.write("event,time,from_node,to_node,ptype,psize,flags,fid,src_dest_addr,seq_num,pid\n")
-
     for line in data :
         if line[4] == "tcp":
             f.write("{},{},{},{},{},{},{},{},{},{},{}\n".format(line[0],line[1],line[2],line[3],line[4],line[5],line[6],line[7],line[8],line[9],line[10]))
     print("[+] data_filter done!")
-#filter_file(np_data)
+filter_file(np_data)
 
 def cal_tmp(data, filename):
     totalBits1 = 0
@@ -79,7 +78,6 @@ def check_sim_data(data):
             pass
         pid_s.append(l[10])
         total += int(l[5])
-    
     print(tmp)
     print(len(pid_s))
     print("sum : {}".format(total))
@@ -93,13 +91,16 @@ def check_sim_streams(data,from_,to_):
     streams_count = len(streams)
     f = open("sim_streams_check_{}_{}.data".format(from_,to_),"w")
     f.write("stream_id,packet_count,total_size\n")
+    ss = 0
     print("streams count : {}".format(streams_count))
+    
     for stream_id in streams:
         tmp_data = d.loc[d.fid == stream_id]
         total_size = tmp_data.loc[tmp_data.event == 'r'].psize.sum()
         pks_count = len(tmp_data.pid.unique())
+        ss += total_size
         f.write("{},{},{}\n".format(stream_id,pks_count,total_size))
-
+    print("total data quantity : {}".format(ss))   
 def display_check_sim_stream(from_,to_):
         pd_data = pd.read_csv("sim_streams_check_{}_{}.data".format(from_,to_))
         nw_data = pd_data.sort_values(['total_size'])
@@ -115,8 +116,8 @@ def display_check_sim_stream(from_,to_):
         plt.title("streams distribution {} -> {}".format(from_,to_))
         plt.legend()
         plt.show()
-#check_sim_streams(pd_data,0,14)
-display_check_sim_stream(0,14)
+check_sim_streams(pd_data,0,14)
+#display_check_sim_stream(0,14)
 
 
 #check_sim_data(pd_data)
