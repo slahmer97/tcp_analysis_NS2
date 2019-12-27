@@ -176,10 +176,10 @@ def display_queue_type_comp():
 
     pd_drop_tail = pd.read_csv("throughput_drop_tail.csv")
     df.plot(marker="*", kind='line', x='time', y='th_cbq', color='b', ax=ax, label='Queue=cbq')
-    df.plot(marker="*", kind='line', x='time', y='th_red', color='g', ax=ax, label='Queue=red')
-    df.plot(marker="*", kind='line', x='time', y='th_drr', color='r', ax=ax, label='Queue=drr')
-    df.plot(marker="*", kind='line', x='time', y='th_fq', color='c', ax=ax, label='Queue=fq')
-    df.plot(marker="*", kind='line', x='time', y='th_dt', color='m', ax=ax, label='Queue=DropTail')
+    df.plot(marker="^", kind='line', x='time', y='th_red', color='g', ax=ax, label='Queue=red')
+    df.plot(marker=".", kind='line', x='time', y='th_drr', color='r', ax=ax, label='Queue=drr')
+    df.plot(marker="H", kind='line', x='time', y='th_fq', color='c', ax=ax, label='Queue=fq')
+    df.plot(marker="s", kind='line', x='time', y='th_dt', color='m', ax=ax, label='Queue=DropTail')
 
 
     plt.ylabel("throughput(mbps)")
